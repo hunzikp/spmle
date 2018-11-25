@@ -25,11 +25,11 @@ In case you don't have scipy and numpy installed (or don't know what these are),
 ```{r dependencies, eval=FALSE}
 spmle::install_pydep()
 ```
-The command installs the Python dependencies in the `r-reticulate` virtual environment.
+This command installs the Python dependencies in the `r-reticulate` virtual environment.
 
 # Usage
 
-To use the package you need to specify a python binary or virtual environment where scipy and numpy are installed. If use used the `install_pydep()` command from above:  
+To use the package you need to specify a python binary or virtual environment where scipy and numpy are installed. If you ran the `install_pydep()` command above, then you can use the following:  
 
 ```{r usage, eval=FALSE}
 library(reticulate)
