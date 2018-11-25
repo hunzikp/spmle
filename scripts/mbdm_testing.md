@@ -6,6 +6,11 @@ November 25, 2018
 Set seed, load package
 ======================
 
+``` r
+set.seed(0)
+library(spmle)
+```
+
 Tests with Simulated Data
 =========================
 
@@ -35,7 +40,7 @@ system.time(ml.fit <- mbdm$train(theta_init))
 ```
 
     ##    user  system elapsed 
-    ##   0.167   0.005   0.171
+    ##   0.184   0.000   0.184
 
 ``` r
 ## Summary
@@ -82,7 +87,7 @@ system.time(ml.fit <- mbdm$train(theta_init))
 ```
 
     ##    user  system elapsed 
-    ##   4.896   1.473   4.803
+    ##   4.692   1.191   4.598
 
 ``` r
 ## Summary
@@ -130,7 +135,7 @@ system.time(ml.fit <- mbdm$train(theta_init))
 ```
 
     ##    user  system elapsed 
-    ##  10.833   0.000  10.834
+    ##  10.537   0.002  10.537
 
 ``` r
 ## Summary
@@ -178,7 +183,7 @@ system.time(ml.fit <- mbdm$train(theta_init))
 ```
 
     ##    user  system elapsed 
-    ##   8.779   0.008   8.792
+    ##   8.548   0.000   8.548
 
 ``` r
 ## Summary
@@ -227,7 +232,7 @@ system.time(ml.fit <- mbdm$train(theta_init))
 ```
 
     ##    user  system elapsed 
-    ##  94.840   1.181  96.024
+    ##  91.767   1.566  93.331
 
 ``` r
 ## Summary
@@ -280,7 +285,7 @@ system.time(ml.fit <- mbdm$train(theta_init))
 ```
 
     ##    user  system elapsed 
-    ##  57.944   0.000  57.944
+    ##  57.133   0.008  57.140
 
 ``` r
 ## Summary

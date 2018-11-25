@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Set seed, load package
 
-```{r dependencies, echo=FALSE, warning=FALSE, message=FALSE}
+```{r dependencies}
 set.seed(0)
 library(spmle)
 ```
