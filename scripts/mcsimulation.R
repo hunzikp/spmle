@@ -2,13 +2,19 @@ library(spmle)
 library(spatialprobit)
 library(risprobit)
 library(spatialreg)
+library(McSpatial)
 library(dplyr)
 library(tidyr)
+
+library(reticulate)
+if(Sys.info()["sysname"]=="Linux") reticulate::use_virtualenv("r-reticulate")  # In Unix
+if(Sys.info()["sysname"]=="Windows") reticulate::use_condaenv("r-reticulate")  # In Windows
+
 
 
 # Functions ----------------------------------------------------------------------------------
 
-fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris')) {
+fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm')) {
   ## Fits Spatial Probit & times result
 
   method <- match.arg(method)
@@ -41,6 +47,15 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris')) {
     perf <- system.time(ris$train())
     rho <- ris$rho
     beta <- ris$beta
+  } else if (method == 'gmm') {
+    perf <- system.time({
+      suppressWarnings({ # suppress error function?
+        gmm.fit <- gmmprobit(data$y ~ data$X[,2], wmat=as.matrix(data$W_t))
+      })
+    })
+    theta <- gmm.fit$coef
+    rho <- theta[length(theta)]
+    beta <- theta[-length(theta)]
   }
 
   K <- length(beta)
@@ -70,11 +85,11 @@ get_beta <- function(params) {
 # Simulations ----------------------------------------------------------------------------------
 
 ## Parameter tibble
-param_tb <- expand.grid(N = c(10^2),
-                        rho = c(-0.5, 0.5),
+param_tb <- expand.grid(N = c(2^8),
+                        rho = c(0, 0.25, 0.5),
                         beta0 = 0,
                         beta1 = 1,
-                        seed = c(1:2), # Replications per config
+                        seed = c(1:500), # Replications per config # number of MCs
                         method = c('bayes', 'spmle', 'ris'),
                         stringsAsFactors = FALSE) %>%
   as_tibble()
@@ -90,3 +105,16 @@ for (i in 1:M) {
 }
 results_tb <- bind_rows(results_ls)
 print(results_tb)
+
+## Summarise results
+results_tb %>%
+  group_by(method, rho) %>%
+  summarise(time_mean=mean(time, na.rm=T),
+            time_sd=sd(time, na.rm=T),
+            beta0_hat_mean=mean(beta0_hat, na.rm=T),
+            beta0_hat_sd=sd(beta0_hat, na.rm=T),
+            beta1_hat_mean=mean(beta1_hat, na.rm=T),
+            beta1_hat_sd=sd(beta1_hat, na.rm=T),
+            rho_hat_mean=mean(rho_hat, na.rm=T),
+            rho_hat_sd=sd(rho_hat, na.rm=T)
+  )
