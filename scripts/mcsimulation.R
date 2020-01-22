@@ -49,13 +49,22 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm')) {
     beta <- ris$beta
   } else if (method == 'gmm') {
     perf <- system.time({
-      suppressWarnings({ # suppress error function?
-        gmm.fit <- gmmprobit(data$y ~ data$X[,2], wmat=as.matrix(data$W_t))
-      })
+      tryCatch(
+        expr = {
+          gmm.fit <- gmmprobit(data$y ~ data$X[,2], wmat=as.matrix(data$W_t), silent=T)
+          theta <- gmm.fit$coef
+        },
+        error = function(e){
+          message("Caught an error on iteration ", i)
+          print(e)
+          theta <- rep(NA_real_, 3)
+        }
+      )
+
+      rho <- theta[length(theta)]
+      beta <- theta[-length(theta)]
+
     })
-    theta <- gmm.fit$coef
-    rho <- theta[length(theta)]
-    beta <- theta[-length(theta)]
   }
 
   K <- length(beta)
@@ -90,7 +99,7 @@ param_tb <- expand.grid(N = c(2^8),
                         beta0 = 0,
                         beta1 = 1,
                         seed = c(1:500), # Replications per config # number of MCs
-                        method = c('bayes', 'spmle', 'ris'),
+                        method = c('gmm'),
                         stringsAsFactors = FALSE) %>%
   as_tibble()
 
