@@ -96,7 +96,7 @@ get_beta <- function(params) {
 # Simulations ----------------------------------------------------------------------------------
 
 ## Parameter tibble
-param_tb <- expand.grid(N = c(2^10),
+param_tb <- expand.grid(N = c(2^12),
                         rho = c(0, 0.5),
                         beta0 = 0,
                         beta1 = 1,
