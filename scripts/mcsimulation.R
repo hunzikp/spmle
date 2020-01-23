@@ -16,7 +16,7 @@ if(Sys.info()["sysname"]=="Windows") reticulate::use_condaenv("r-reticulate")  #
 
 # Functions ----------------------------------------------------------------------------------
 
-fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm')) {
+fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm', 'naiveprobit')) {
   ## Fits Spatial Probit & times result
 
   method <- match.arg(method)
@@ -67,6 +67,12 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm')) {
       beta <- theta[-length(theta)]
 
     })
+  } else if (method == 'naiveprobit') {
+    Wy <- as.matrix(data$W_t) %*% data$y
+    perf <- system.time(glm.fit <- glm(data$y~ data$X[,2] + Wy, family=binomial(link="probit")))
+    theta <- coef(glm.fit)
+    rho <- theta[length(theta)]
+    beta <- theta[-length(theta)]
   }
 
   K <- length(beta)
@@ -96,12 +102,12 @@ get_beta <- function(params) {
 # Simulations ----------------------------------------------------------------------------------
 
 ## Parameter tibble
-param_tb <- expand.grid(N = c(2^12),
+param_tb <- expand.grid(N = c(2^8),
                         rho = c(0, 0.5),
                         beta0 = 0,
                         beta1 = 1,
-                        seed = c(1:500), # Replications per config # number of MCs
-                        method = c('gmm', 'spmle', 'bayes', 'ris'),
+                        seed = c(1:3), # Replications per config # number of MCs
+                        method = c('naiveprobit'),
                         stringsAsFactors = FALSE) %>%
   as_tibble()
 
@@ -109,7 +115,7 @@ param_tb <- expand.grid(N = c(2^12),
 M <- nrow(param_tb)
 results_ls <- vector('list', M)
 
-#no_cores <- detectCores()
+no_cores <- detectCores()
 cl <- makeCluster(no_cores-1)
 registerDoParallel(cl)
 
@@ -129,7 +135,7 @@ stopCluster(cl)
 
 results_tb <- bind_rows(results_ls)
 print(results_tb)
-
+save(results_tb, file="mcresults-256n-500r-200123.Rdata") # maybe save to different folder
 
 ## Summarise results
 results_tb %>%
