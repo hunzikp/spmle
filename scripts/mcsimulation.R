@@ -3,8 +3,10 @@ library(spatialprobit)
 library(risprobit)
 library(spatialreg)
 library(McSpatial)
+
 library(dplyr)
 library(tidyr)
+library(doParallel)
 
 library(reticulate)
 if(Sys.info()["sysname"]=="Linux") reticulate::use_virtualenv("r-reticulate")  # In Unix
@@ -94,26 +96,40 @@ get_beta <- function(params) {
 # Simulations ----------------------------------------------------------------------------------
 
 ## Parameter tibble
-param_tb <- expand.grid(N = c(2^8),
-                        rho = c(0, 0.25, 0.5),
+param_tb <- expand.grid(N = c(2^10),
+                        rho = c(0, 0.5),
                         beta0 = 0,
                         beta1 = 1,
                         seed = c(1:500), # Replications per config # number of MCs
-                        method = c('gmm'),
+                        method = c('gmm', 'spmle', 'bayes', 'ris'),
                         stringsAsFactors = FALSE) %>%
   as_tibble()
 
 ## Monte Carlos
 M <- nrow(param_tb)
 results_ls <- vector('list', M)
-for (i in 1:M) {
-  params <- param_tb[i,]
-  data <- simulate_spprobit(params)
-  results <- fit_spprobit(data, method = params$method)
-  results_ls[[i]] <- c(params, results)
-}
+
+#no_cores <- detectCores()
+cl <- makeCluster(no_cores-1)
+registerDoParallel(cl)
+
+results_ls <- foreach (i = 1:M, .packages = c("spmle",
+                                              "spatialprobit",
+                                              "risprobit",
+                                              "spatialreg",
+                                              "McSpatial"),
+                       .combine = bind_rows) %dopar% {
+                         params <- param_tb[i,]
+                         data <- simulate_spprobit(params)
+                         results <- fit_spprobit(data, method = params$method)
+                         results_ls[[i]] <- c(params, results)
+                       }
+
+stopCluster(cl)
+
 results_tb <- bind_rows(results_ls)
 print(results_tb)
+
 
 ## Summarise results
 results_tb %>%
