@@ -22,12 +22,22 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm', 'naive
   method <- match.arg(method)
 
   if (method == 'bayes') {
-    perf <- system.time({
-      suppressWarnings({
-        bayes.fit <- sar_probit_mcmc(y = data$y, X = data$X, W = data$W_t)
-      })
-    })
-    theta <- coef(bayes.fit)
+
+    tryCatch(
+      expr = {
+        perf <- system.time({
+          suppressWarnings({
+            bayes.fit <- sar_probit_mcmc(y = data$y, X = data$X, W = data$W_t)
+          })
+        })
+        theta <- coef(bayes.fit)
+      },
+      error = function(e){
+        message("Caught an error on iteration ", i)
+        print(e)
+        theta <- rep(NA_real_, 3)
+      }
+    )
     rho <- theta[length(theta)]
     beta <- theta[-length(theta)]
   } else if (method == 'spmle') {
@@ -36,8 +46,17 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm', 'naive
                      W_t = data$W_t,
                      has_temporal_lag = FALSE)
     theta_init <- runif(mbdm$n_parameters, min = -0.75, max = 0.75)
-    perf <- system.time(ml.fit <- mbdm$train(theta_init))
-    theta <- coef(ml.fit)
+    tryCatch(
+      expr = {
+        perf <- system.time(ml.fit <- mbdm$train(theta_init))
+        theta <- coef(ml.fit)
+      },
+      error = function(e){
+        message("Caught an error on iteration ", i)
+        print(e)
+        theta <- rep(NA_real_, 3)
+      }
+    )
     rho <- theta[length(theta)]
     beta <- theta[-length(theta)]
   } else if (method == 'ris') {
@@ -62,15 +81,22 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm', 'naive
           theta <- rep(NA_real_, 3)
         }
       )
-
-      rho <- theta[length(theta)]
-      beta <- theta[-length(theta)]
-
     })
+    rho <- theta[length(theta)]
+    beta <- theta[-length(theta)]
   } else if (method == 'naiveprobit') {
     Wy <- as.matrix(data$W_t) %*% data$y
-    perf <- system.time(glm.fit <- glm(data$y~ data$X[,2] + Wy, family=binomial(link="probit")))
-    theta <- coef(glm.fit)
+    tryCatch(
+      expr = {
+        perf <- system.time(glm.fit <- glm(data$y~ data$X[,2] + Wy, family=binomial(link="probit")))
+        theta <- coef(glm.fit)
+      },
+      error = function(e){
+        message("Caught an error on iteration ", i)
+        print(e)
+        theta <- rep(NA_real_, 3)
+      }
+    )
     rho <- theta[length(theta)]
     beta <- theta[-length(theta)]
   }
@@ -102,12 +128,12 @@ get_beta <- function(params) {
 # Simulations ----------------------------------------------------------------------------------
 
 ## Parameter tibble
-param_tb <- expand.grid(N = c(2^8),
-                        rho = c(0, 0.5),
+param_tb <- expand.grid(N = c(2^10),
+                        rho = c(0, 0.25, 0.5),
                         beta0 = 0,
                         beta1 = 1,
-                        seed = c(1:3), # Replications per config # number of MCs
-                        method = c('naiveprobit'),
+                        seed = c(1), # Replications per config # number of MCs
+                        method = c('spmle', 'gmm', 'naiveprobit', 'bayes'),
                         stringsAsFactors = FALSE) %>%
   as_tibble()
 
