@@ -15,10 +15,10 @@ if(Sys.info()["sysname"]=="Windows") reticulate::use_condaenv("r-reticulate")  #
 
 # Constants ----------------------------------------------------------------------------------
 
-n_cores <- 6
+n_cores <- 10
 save_results <- FALSE
 save_path <- "mcresults-256n-500r-200123.Rdata"
-n_repetitions <- 5
+n_repetitions <- 500
 
 
 # Functions ----------------------------------------------------------------------------------
@@ -126,9 +126,9 @@ get_beta <- function(params) {
 # Simulations ----------------------------------------------------------------------------------
 
 ## Parameter tibble
-param_tb <- expand.grid(N = c(2^10),
+param_tb <- expand.grid(N = c(2^8),
                         rho = c(0, 0.25, 0.5),
-                        beta0 = 0,
+                        beta0 = -0.5,
                         beta1 = 1,
                         seed = c(1:n_repetitions), # Replications per config (number of MCs)
                         method = c('spmle', 'gmm', 'naiveprobit', 'bayes'),
