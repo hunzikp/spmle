@@ -16,9 +16,9 @@ if(Sys.info()["sysname"]=="Windows") reticulate::use_condaenv("r-reticulate")  #
 # Constants ----------------------------------------------------------------------------------
 
 n_cores <- 11
-save_results <- TRUE
+save_results <- FALSE
 save_path <- "mcresults-T-256n-500r-200128.Rdata"
-n_repetitions <- 500
+n_repetitions <- 2
 has_temporal_lag = TRUE
 has_spatial_lag = TRUE
 
@@ -46,6 +46,7 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm', 'naive
         rho <- theta[length(theta)]
         gamma <- theta[3]
         beta <- theta[1:2]
+        ses <- sqrt(diag(solve(-ml.fit$hessian)))
       } else if (method == 'ris') {
         ris <- RisSpatialProbit$new(X = data$X,
                                     y = data$y,
@@ -60,6 +61,7 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm', 'naive
         gamma <- ris$gamma
         rho <- ris$rho
         beta <- ris$beta
+        ses <- sqrt(diag(ris$VC_mat))
       } else if (method == 'naiveprobit') {
         Wy <- as.matrix(data$W_t) %*% data$y
         perf <- system.time({
@@ -87,9 +89,9 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm', 'naive
   }
 
   # Prep return value
-  beta_names <- paste('beta', 0:(K-1), "_hat", sep = "")
-  res_names <- c('time', beta_names, 'gamma_hat', 'rho_hat')
-  res_ls <- as.list(c(elapsed, beta, gamma, rho))
+  beta_names <- paste('beta', 0:(K-1), rep(c("_hat", "_sd"), each=2), sep = "")
+  res_names <- c('time', beta_names, 'gamma_hat', 'gamma_sd', 'rho_hat', "rho_sd")
+  res_ls <- as.list(c(elapsed, beta, ses[1:2], gamma, ses[3], rho, ses[4]))
   names(res_ls) <- res_names
 
   return(res_ls)

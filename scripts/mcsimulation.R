@@ -18,7 +18,7 @@ if(Sys.info()["sysname"]=="Windows") reticulate::use_condaenv("r-reticulate")  #
 n_cores <- 10
 save_results <- FALSE
 save_path <- "mcresults-256n-500r-200123.Rdata"
-n_repetitions <- 500
+n_repetitions <- 2
 
 
 # Functions ----------------------------------------------------------------------------------
@@ -54,6 +54,7 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm', 'naive
         theta <- coef(ml.fit)
         rho <- theta[length(theta)]
         beta <- theta[-length(theta)]
+        ses <- sqrt(diag(solve(-ml.fit$hessian)))
       } else if (method == 'ris') {
         ris <- RisSpatialProbit$new(X = data$X,
                                     y = data$y,
@@ -66,6 +67,7 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm', 'naive
         elapsed <- perf[3]
         rho <- ris$rho
         beta <- ris$beta
+        ses <- sqrt(diag(ris$VC_mat))
       } else if (method == 'gmm') {
         perf <- system.time({
           gmm.fit <- gmmprobit(data$y ~ data$X[,2], wmat=as.matrix(data$W_t), silent=T)
@@ -74,6 +76,7 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm', 'naive
         theta <- gmm.fit$coef
         rho <- theta[length(theta)]
         beta <- theta[-length(theta)]
+        ses <- gmm.fit$se
       } else if (method == 'naiveprobit') {
         Wy <- as.matrix(data$W_t) %*% data$y
         perf <- system.time({
@@ -83,6 +86,7 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm', 'naive
         theta <- coef(glm.fit)
         rho <- theta[length(theta)]
         beta <- theta[-length(theta)]
+        ses <- sqrt(diag(vcov(glm.fit)))
       }
     },
     error = function(e) {
@@ -98,11 +102,11 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm', 'naive
     rho <- NA
     beta <- rep(NA, K)
   }
-
+rm(beta_names)
   # Prep return value
-  beta_names <- paste('beta', 0:(K-1), "_hat", sep = "")
-  res_names <- c('time', beta_names, 'rho_hat')
-  res_ls <- as.list(c(elapsed, beta, rho))
+  beta_names <- paste('beta', 0:(K-1), rep(c("_hat", "_sd"), each=2), sep = "")
+  res_names <- c('time', beta_names, 'rho_hat', 'rho_sd')
+  res_ls <- as.list(c(elapsed, beta, ses[1:2], rho, ses[3]))
   names(res_ls) <- res_names
 
   return(res_ls)
@@ -131,7 +135,7 @@ param_tb <- expand.grid(N = c(2^8),
                         beta0 = -0.5,
                         beta1 = 1,
                         seed = c(1:n_repetitions), # Replications per config (number of MCs)
-                        method = c('spmle', 'gmm', 'naiveprobit', 'bayes'),
+                        method = c('naiveprobit', 'gmm'),
                         stringsAsFactors = FALSE) %>%
   as_tibble()
 
