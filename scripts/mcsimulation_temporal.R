@@ -16,9 +16,9 @@ if(Sys.info()["sysname"]=="Windows") reticulate::use_condaenv("r-reticulate")  #
 # Constants ----------------------------------------------------------------------------------
 
 n_cores <- 11
-save_results <- FALSE
-save_path <- "mcresults-T-256n-500r-200128.Rdata"
-n_repetitions <- 2
+save_results <- TRUE
+save_path <- "mcresults-T-1024n-500r-onlyRIS-200226.Rdata"
+n_repetitions <- 100
 has_temporal_lag = TRUE
 has_spatial_lag = TRUE
 
@@ -86,13 +86,14 @@ fit_spprobit <- function(data, method = c('bayes', 'spmle', 'ris', 'gmm', 'naive
     rho <- NA
     gamma <- NA
     beta <- rep(NA, K)
+    ses <- rep(NA, K+2)
   }
 
-  # Prep return value
-  beta_names <- paste('beta', 0:(K-1), rep(c("_hat", "_sd"), each=2), sep = "")
-  res_names <- c('time', beta_names, 'gamma_hat', 'gamma_sd', 'rho_hat', "rho_sd")
-  res_ls <- as.list(c(elapsed, beta, ses[1:2], gamma, ses[3], rho, ses[4]))
-  names(res_ls) <- res_names
+    # Prep return value
+    beta_names <- paste('beta', 0:(K-1), rep(c("_hat", "_se"), each=2), sep = "")
+    res_names <- c('time', beta_names, 'gamma_hat', 'gamma_se', 'rho_hat', "rho_se")
+    res_ls <- as.list(c(elapsed, beta, ses[1:2], gamma, ses[3], rho, ses[4]))
+    names(res_ls) <- res_names
 
   return(res_ls)
 }
@@ -117,13 +118,13 @@ get_beta <- function(params) {
 
 ## Parameter tibble
 param_tb <- expand.grid(N = c(2^6),
-                        TT = c(2^2),
+                        TT = c(2^4),
                         rho = 0,
                         gamma = c(0, 0.25, 0.5),
                         beta0 = -0.5,
                         beta1 = 1,
                         seed = c(1:n_repetitions), # Replications per config (number of MCs)
-                        method = c('spmle', 'ris'),
+                        method = c('ris'),
                         stringsAsFactors = FALSE) %>%
   as_tibble()
 
@@ -155,13 +156,14 @@ if (save_results) {
 }
 
 ## Summarize results
+# mean estimates
 results_tb %>%
-  group_by(method, rho) %>%
+  group_by(method, gamma) %>%
   summarize(
-    n_sim = sum(!is.na(time)),
-    n_fail = sum(is.na(time)),
-    time_mean=mean(time, na.rm=T),
-    time_sd=sd(time, na.rm=T),
+    n_sim = sum(!is.na(gamma_se)),
+    # n_fail = sum(is.na(gamma_se)),
+    # time_mean=mean(time, na.rm=T),
+    # time_sd=sd(time, na.rm=T),
     beta0_hat_mean=mean(beta0_hat, na.rm=T),
     beta0_hat_sd=sd(beta0_hat, na.rm=T),
     beta1_hat_mean=mean(beta1_hat, na.rm=T),
@@ -169,3 +171,12 @@ results_tb %>%
     gamma_hat_mean = mean(gamma_hat, na.rm=T),
     gamma_hat_sd = sd(gamma_hat, na.rm=T)
   )
+
+# standard errors and overconfidence
+results_tb %>%
+  group_by(method, gamma) %>%
+  summarize(
+    overconfidence = sd(gamma_hat, na.rm=T)/mean(gamma_se, na.rm=T)
+)
+
+
