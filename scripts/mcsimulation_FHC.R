@@ -122,7 +122,7 @@ get_beta <- function(params) {
 ## Parameter tibble
 param_tb <- expand.grid(N = c(50),
                         TT = c(21),
-                        rho = c(0.1), # c(0.1, 0.25),
+                        rho =  c(0.1, 0.25),
                         gamma = c(0.3), # c(0.3, 0.5),
                         beta0 = -1.5,
                         beta1 = 3,
@@ -162,7 +162,8 @@ results_tb <- foreach (i = 1:M, .packages = c("spmle",
   data$ystar <- solve(i_nt-rho*WNT-gamma*TL)%*%(data$X%*%beta + rnorm(n=1050,mean = 0, sd=1))
   data$y <- ifelse(data$ystar>0, 1, 0)
   # W
-  data$W_t <- as.matrix(WNT, sparse=TRUE)
+  #data$W_t <- as.matrix(WNT, sparse=TRUE)
+  data$W_t <- as.matrix(W, sparse=T)
 
   ## Estimate
   err <- tryCatch(
