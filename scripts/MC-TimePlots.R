@@ -16,7 +16,7 @@ sp <- data.frame()
 for(f in files) {
   print(f)
   load(f)
-  sp <- rbind(sp, results_tb[!is.na(results_tb$rho_se),c("method", "N", "time", "rho_se")])
+  sp <- rbind(sp, results_tb[!is.na(results_tb$rho_se),c("method", "N", "time", "rho_se")]) # drops non-converged spmles
 }
 rm(files, f, results_tb)
 unique(paste(sp$method, sp$N, sep="-"))
@@ -27,7 +27,7 @@ te <- data.frame()
 for(f in files) {
   print(f)
   load(f)
-  te <- rbind(te, results_tb[!is.na(results_tb$rho_se),c("method", "N", "TT", "time")])
+  te <- rbind(te, results_tb[!is.na(results_tb$rho_se),c("method", "N", "TT", "time")]) # drops non-converged spmles
 }
 rm(files, f, results_tb)
 unique(paste0(te$method, st$N, st$TT))
@@ -39,7 +39,7 @@ for(f in files) {
   if(f!="mcresults-ST-49n20t-RIS-100r-200212.Rdata"){
     print(f)
     load(f)
-    st <- rbind(st, results_tb[!is.na(results_tb$rho_se), c("method", "N", "TT", "time")])
+    st <- rbind(st, results_tb[!is.na(results_tb$rho_se), c("method", "N", "TT", "time")]) # drops non-converged spmles
   }
 }
 rm(files, f, results_tb)
@@ -58,11 +58,11 @@ levels(sp$Estimator) <- list(Bayes="bayes", GMM="gmm", NaiveProbit="naiveprobit"
 # Plot
 ggplot(aes(y = time, x = Estimator, fill = N, dodge=N), data=sp) +
   geom_boxplot() +
-  scale_y_log10(name="Log(Seconds)") +
+  scale_y_log10(name="Seconds (Log-Scale)", breaks = scales::log_breaks(n = 5), labels=c(.01,.1,10,1000,10000)) +
 #  scale_fill_manual(values=c("#F8766D", "#00BA38")) + # change colour of fill
   ggtitle("Mean Estimation Time for Spatial Monte Carlo Experiments") +
   theme_minimal()
-ggsave(filename="plots/MC_sp-time-200219.pdf")
+ggsave(filename="plots/MC_sp-time-200228.pdf")
 
 
 ## Temporal
@@ -77,7 +77,7 @@ levels(te$Estimator) <- list(RIS="ris", SPMLE="spmle")
 # Plot
 ggplot(aes(y = time, x = Estimator, fill = NT, dodge=NT), data=te) +
   geom_boxplot() +
-  scale_y_log10(name="Log(Seconds)") +
+  scale_y_log10(name="Seconds (Log-Scale)") +
   scale_fill_manual(values=c("#F8766D", "#00BA38", "#4E84C4")) + # change colour of fill
   ggtitle("Mean Estimation Time for Temporal Monte Carlo Experiments") +
   theme_minimal()
@@ -96,7 +96,7 @@ levels(st$Estimator) <- list(RIS="ris", SPMLE="spmle")
 # Plot
 ggplot(aes(y = time, x = Estimator, fill = NT, dodge=NT), data=st) +
   geom_boxplot() +
-  scale_y_log10(name="Log(Seconds)") +
+  scale_y_log10(name="Seconds (Log-Scale)") +
   scale_fill_manual(values=c("#F8766D", "#00BA38", "#4E84C4")) + # change colour of fill
   ggtitle("Mean Estimation Time for Spatio-Temporal Monte Carlo Experiments") +
   theme_minimal()
