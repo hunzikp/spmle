@@ -9,7 +9,6 @@ if(Sys.info()["user"]=="ncb") setwd("/home/ncb/Dropbox/SpatialLogit/MonteCarlo/"
 getwd()
 
 ###################################################
-###################################################
 ### Import Spatial MC results
 files <- paste("output/spatial/", dir("output/spatial"), sep="")
 files
@@ -31,8 +30,9 @@ te <- data.frame()
 for(f in files) {
   print(f)
   load(f)
-  te <- rbind(te, results_tb[!is.na(results_tb$rho_se),# drops non-converged spmles
-                             c("N", "TT", "method", "rho", "beta0_hat", "beta1_hat", "rho_hat")])
+  te <- rbind(te, results_tb[!is.na(results_tb$gamma_se) & !is.na(results_tb$rho_se),# drops non-converged spmles
+                             c("N", "TT", "method", "gamma", "beta0_hat", "beta1_hat", "gamma_hat")]
+              )
 }
 rm(files, f, results_tb)
 unique(paste0(te$method, te$N, te$TT))
