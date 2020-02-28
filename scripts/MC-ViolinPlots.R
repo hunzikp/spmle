@@ -9,21 +9,21 @@ if(Sys.info()["user"]=="ncb") setwd("/home/ncb/Dropbox/SpatialLogit/MonteCarlo/"
 getwd()
 
 ###################################################
+###################################################
 ### Import Spatial MC results
-## N=256
-sp1 <- read.csv("output/spatial/mcresults-256n-500r-200127.csv", header=T, sep=",")
-## N=1024
-load("output/spatial/mcresults-sp-1024n-500r-200127.Rdata")
-sp2 <- results_tb
-rm(results_tb)
-## N=4096
-load("output/spatial/mcresults-sp-4096n-500r-200128.Rdata")
-sp3 <- results_tb
-rm(results_tb)
-## N=16384
-load("output/spatial/mcresults-sp-16384n-250r-200128.Rdata")
-sp4 <- results_tb
-rm(results_tb)
+files <- paste("output/spatial/", dir("output/spatial"), sep="")
+files
+files <- files[c(1:3,5:6)]
+sp <- data.frame()
+for(f in files) {
+  print(f)
+  load(f)
+  sp <- rbind(sp,
+              results_tb[!is.na(results_tb$rho_se),# drops non-converged spmles
+                         c("N", "method", "rho", "beta0_hat", "beta1_hat", "rho_hat")])
+}
+rm(files, f, results_tb)
+unique(paste(sp$method, sp$N, sep="-"))
 
 ### Import Temporal MC results
 files <- paste("output/temporal/", dir("output/temporal"), sep="")
@@ -31,96 +31,59 @@ te <- data.frame()
 for(f in files) {
   print(f)
   load(f)
-  te <- rbind(te, results_tb[,c("N", "TT", "method", "gamma", "beta0_hat", "beta1_hat", "gamma_hat")])
+  te <- rbind(te, results_tb[!is.na(results_tb$rho_se),# drops non-converged spmles
+                             c("N", "TT", "method", "rho", "beta0_hat", "beta1_hat", "rho_hat")])
 }
 rm(files, f, results_tb)
+unique(paste0(te$method, te$N, te$TT))
 
 ### Import Spatio-Temporal MC results
 files <- paste("output/spatio-temporal/", dir("output/spatio-temporal"), sep="")
 st <- data.frame()
 for(f in files) {
-  print(f)
-  load(f)
-  st <- rbind(st, results_tb[,c("N", "TT", "method", "gamma", "rho",
-                                "beta0_hat", "beta1_hat", "gamma_hat", "rho_hat")])
+  if(f!="mcresults-ST-49n20t-RIS-100r-200212.Rdata"){
+    print(f)
+    load(f)
+    st <- rbind(st, results_tb[!is.na(results_tb$rho_se) & !is.na(results_tb$gamma_se), # drops non-converged spmles
+                               c("N", "TT", "method", "rho", "gamma", "beta0_hat", "beta1_hat", "rho_hat", "gamma_hat")])
+  }
+
 }
 rm(files, f, results_tb)
-st <- st[st$N!=49,]
+unique(paste0(st$method, st$N, st$TT))
 
 
 ###################################################
 ### Plot spatial results
-### N = 256
-sp1_rho0 <- ggplot(subset(sp1, rho==0)) +
-                     geom_violin(aes(x=as.factor(method), y=rho_hat)) +
-                     geom_hline(yintercept=0) +
-                     theme_bw()
+## Prep
+sp$Estimator <- as.factor(sp$method)
+levels(sp$Estimator) <- list(Bayes="bayes", GMM="gmm", MLE="naiveprobit", RIS="ris", SPMLE="spmle")
 
-sp1_rho025 <- ggplot(subset(sp1, rho==0.25)) +
-                      geom_violin(aes(x=as.factor(method), y=rho_hat)) +
-                      geom_hline(yintercept=.25) +
-                      theme_bw()
+spplots <- expand.grid(rho=unique(sp$rho),
+                       N=unique(sp$N))
+spplots <- spplots[order(spplots$N, spplots$rho),]
+spplots$index <- 1:dim(spplots)[1]
 
-sp1_rho05 <- ggplot(subset(sp1, rho==0.5)) +
-                      geom_violin(aes(x=as.factor(method), y=rho_hat)) +
-                      geom_hline(yintercept=.5) +
-                      theme_bw()
+plotsout <- list()
 
-### N = 1024
-sp2_rho0 <- ggplot(subset(sp2, rho==0)) +
-            geom_violin(aes(x=as.factor(method), y=rho_hat)) +
-            geom_hline(yintercept=0) +
-            theme_bw()
+## Plot
+for(i in spplots$index){
+  plotsout[[i]] <- ggplot(subset(sp, rho==spplots$rho[i] & N==spplots$N[i])) +
+    geom_violin(aes(x=Estimator, y=rho_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
+    scale_y_continuous(limits = c(-1, 1), name=expression("Distribution of " *rho* " estimates")) +
+    geom_hline(yintercept=spplots$rho[i]) +
+    ggtitle(bquote(paste("N=", .(spplots[i,2]), ", ", rho, "=", .(spplots[i,1])))) +
+    theme_minimal()
+}
 
-sp2_rho025 <- ggplot(subset(sp2, rho==0.25)) +
-              geom_violin(aes(x=as.factor(method), y=rho_hat)) +
-              geom_hline(yintercept=.25) +
-              theme_bw()
+pdf("plots/MC_sp-ViolinPlots-200228.pdf")
+  grid.arrange(plotsout[[1]], plotsout[[2]], plotsout[[3]],
+               plotsout[[4]], plotsout[[5]], plotsout[[6]],
+               plotsout[[7]], plotsout[[8]], plotsout[[9]],
+               ncol=3, as.table = FALSE)
+dev.off()
 
-sp2_rho05 <- ggplot(subset(sp2, rho==0.5)) +
-              geom_violin(aes(x=as.factor(method), y=rho_hat)) +
-              geom_hline(yintercept=.5) +
-              theme_bw()
-
-### N = 4096
-sp3_rho0 <- ggplot(subset(sp3, rho==0)) +
-                  geom_violin(aes(x=as.factor(method), y=rho_hat)) +
-                  geom_hline(yintercept=0) +
-                  theme_bw()
-
-sp3_rho025 <- ggplot(subset(sp3, rho==0.25)) +
-                    geom_violin(aes(x=as.factor(method), y=rho_hat)) +
-                    geom_hline(yintercept=.25) +
-                    theme_bw()
-
-sp3_rho05 <- ggplot(subset(sp3, rho==0.5)) +
-                    geom_violin(aes(x=as.factor(method), y=rho_hat)) +
-                    geom_hline(yintercept=.5) +
-                    theme_bw()
-
-### N = 16384
-sp4_rho0 <- ggplot(subset(sp4, rho==0)) +
-                  geom_violin(aes(x=as.factor(method), y=rho_hat)) +
-                  geom_hline(yintercept=0) +
-                  theme_bw()
-
-sp4_rho025 <- ggplot(subset(sp4, rho==0.25)) +
-                    geom_violin(aes(x=as.factor(method), y=rho_hat)) +
-                    geom_hline(yintercept=.25) +
-                    theme_bw()
-
-sp4_rho05 <- ggplot(subset(sp4, rho==0.5)) +
-                    geom_violin(aes(x=as.factor(method), y=rho_hat)) +
-                    geom_hline(yintercept=.5) +
-                    theme_bw()
-
-
-grid.arrange(sp1_rho0, sp2_rho0, sp3_rho0, sp4_rho0,
-             sp1_rho025, sp2_rho025, sp3_rho025, sp4_rho025,
-             sp1_rho05, sp2_rho05, sp3_rho05, sp4_rho05,
-            ncol=4)
-
-
+rm(plotsout, spplots)
 
 ###################################################
 ### Plot temporal results
@@ -131,7 +94,7 @@ levels(te$Estimator) <- list(RIS="ris", SPMLE="spmle")
 teplots <- expand.grid(gamma=unique(te$gamma),
                        TT=unique(te$TT))
 teplots <- teplots[order(teplots$T, teplots$gamma),]
-teplots$index <- 1:dim(teplots_index)[1]
+teplots$index <- 1:dim(teplots)[1]
 
 plotsout <- list()
 
@@ -141,11 +104,11 @@ for(i in teplots$index){
                           geom_violin(aes(x=Estimator, y=gamma_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
                           scale_y_continuous(limits = c(-1, 1), name=expression("Distribution of " *gamma* " estimates")) +
                           geom_hline(yintercept=teplots$gamma[i]) +
-                          ggtitle(paste0("N=64, T=", teplots$TT[i], ", ", expression(gamma), "=", teplots$gamma[i])) +
+                          ggtitle(bquote(paste("N=64, T=", .(teplots[i,2]), ", ", gamma, "=", .(teplots[i,1])))) +
                           theme_minimal()
 }
 
-pdf("plots/MC_te-ViolinPlots-200219.pdf")
+pdf("plots/MC_te-ViolinPlots-200228.pdf")
   grid.arrange(plotsout[[1]], plotsout[[2]], plotsout[[3]],
                plotsout[[4]], plotsout[[5]], plotsout[[6]],
                ncol=2, as.table = FALSE)
@@ -154,139 +117,64 @@ dev.off()
 rm(plotsout, teplots)
 
 ###################################################
-### Plot spatio-temporal results
+### Plot spatio-temporal results (gamma)
 ## Prep
 st$Estimator <- as.factor(st$method)
 levels(st$Estimator) <- list(RIS="ris", SPMLE="spmle")
 
+stplots <- expand.grid(gamma=unique(st$gamma),
+                       rho = unique(st$rho),
+                       TT=unique(st$TT))
+stplots <- stplots[!(stplots$rho==.5 & stplots$gamma==.5),]
+stplots <- stplots[order(stplots$TT, stplots$gamma, stplots$rho),]
+stplots$index <- 1:dim(stplots)[1]
+
 plotsout <- list()
 
-## TT=4, gamma=0.25, rho=.25 - gamma estimates
-plotsout[[1]] <- ggplot(subset(st, TT==4 & gamma==.25 & rho==.25)) +
-                        geom_violin(aes(x=Estimator, y=gamma_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
-                        scale_y_continuous(limits = c(-1, 1), name="") +
-                        scale_x_discrete(name="") +
-                        geom_hline(yintercept=.25) +
-#                        ggtitle(expression("" *gamma* "=0.25, " *rho* "=.25")) +
-                        annotate(geom="text", x=1.5, y=-.5, label=expression("" *gamma* "=0.25, " *rho* "=.25")) +
-                        theme_minimal()
+## Plot
+for(i in stplots$index){
+  plotsout[[i]] <- ggplot(subset(st, gamma==stplots$gamma[i] & rho==stplots$rho[i] & TT==stplots$TT[i])) +
+    geom_violin(aes(x=Estimator, y=gamma_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
+    scale_y_continuous(limits = c(-1, 1), name=expression("Distribution of " *gamma* " estimates")) +
+    geom_hline(yintercept=stplots$gamma[i]) +
+    ggtitle(bquote(paste("N=64, T=", .(stplots[i,3]), ", ", gamma, "=", .(stplots[i,1]), ", ", rho, "=", .(stplots[i,2])))) +
+    theme_minimal()
+}
 
-## TT=4, gamma=0.25, rho=.5 - gamma estimates
-plotsout[[2]] <- ggplot(subset(st, TT==4 & gamma==.25 & rho==.5)) +
-                        geom_violin(aes(x=Estimator, y=gamma_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
-                        scale_y_continuous(limits = c(-1, 1), name=expression("Distribution of " *gamma* " estimates")) +
-                        scale_x_discrete(name="") +
-                        geom_hline(yintercept=.25) +
-#                        ggtitle(expression("" *gamma* "=0.25, " *rho* "=.5")) +
-                        annotate(geom="text", x=1.5, y=-.5, label=expression("" *gamma* "=0.25, " *rho* "=.5")) +
-                        theme_minimal()
-
-## TT=4, gamma=0.5, rho=.25 - gamma estimates
-plotsout[[3]] <- ggplot(subset(st, TT==4 & gamma==.5 & rho==.25)) +
-                        geom_violin(aes(x=Estimator, y=gamma_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
-                        scale_y_continuous(limits = c(-1, 1), name="") +
-                        geom_hline(yintercept=.5) +
-#                        ggtitle(expression("" *gamma* "=0.25, " *rho* "=.25")) +
-                        annotate(geom="text", x=1.5, y=-.5, label=expression("" *gamma* "=0.5, " *rho* "=.25")) +
-                        theme_minimal()
-
-## TT=16, gamma=0.25, rho=.25 - gamma estimates
-plotsout[[4]] <- ggplot(subset(st, TT==16 & gamma==.25 & rho==.25)) +
-                        geom_violin(aes(x=Estimator, y=gamma_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
-                        scale_y_continuous(limits = c(-1, 1), name="") +
-                        scale_x_discrete(name="") +
-                        geom_hline(yintercept=.25) +
-#                        ggtitle(expression("" *gamma* "=0.25, " *rho* "=.25")) +
-                        annotate(geom="text", x=1.5, y=-.5, label=expression("" *gamma* "=0.25, " *rho* "=.25")) +
-                        theme_minimal()
-
-## TT=16, gamma=0.25, rho=.5 - gamma estimates
-plotsout[[5]] <- ggplot(subset(st, TT==16 & gamma==.25 & rho==.5)) +
-                        geom_violin(aes(x=Estimator, y=gamma_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
-                        scale_y_continuous(limits = c(-1, 1), name="") +
-                        scale_x_discrete(name="") +
-                        geom_hline(yintercept=.25) +
-#                        ggtitle(expression("" *gamma* "=0.25, " *rho* "=.5")) +
-                        annotate(geom="text", x=1.5, y=-.5, label=expression("" *gamma* "=0.25, " *rho* "=.5")) +
-                        theme_minimal()
-
-## TT=16, gamma=0.25, rho=.5 - gamma estimates
-plotsout[[6]] <- ggplot(subset(st, TT==16 & gamma==.5 & rho==.25)) +
-                        geom_violin(aes(x=Estimator, y=gamma_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
-                        scale_y_continuous(limits = c(-1, 1), name="") +
-                        geom_hline(yintercept=.5) +
-#                        ggtitle(expression("" *gamma* "=0.5, " *rho* "=.25")) +
-                        annotate(geom="text", x=1.5, y=-.5, label=expression("" *gamma* "=0.5, " *rho* "=.25")) +
-                        theme_minimal()
-
-pdf("plots/MC_st-ViolinPlots-gamma-200219.pdf")
-  grid.arrange(arrangeGrob(plotsout[[1]], plotsout[[2]], plotsout[[3]],
-                           top=textGrob("N=64, T=4", gp=gpar(fontface="bold")),
-                           ncol=1),
-               arrangeGrob(plotsout[[4]], plotsout[[5]], plotsout[[6]],
-                           top=textGrob("N=64, T=16", gp=gpar(fontface="bold")),
-                           ncol=1),
-               ncol=2
-               )
+pdf("plots/MC_st-ViolinPlots-gamma-200228.pdf")
+  grid.arrange(plotsout[[1]], plotsout[[2]], plotsout[[3]],
+               plotsout[[4]], plotsout[[5]], plotsout[[6]],
+               ncol=2, as.table = FALSE)
 dev.off()
 
+rm(plotsout)
 
 
+###################################################
+### Plot spatio-temporal results (rho)
+## Prep
+stplots <- stplots[order(stplots$TT, stplots$rho, stplots$gamma),]
+stplots$index <- 1:dim(stplots)[1]
 
+plotsout <- list()
 
-## TT=4, gamma=0.25, rho=.25 - rho estimates
-plotsout[[1]] <- ggplot(subset(st, TT==4 & gamma==.25 & rho==.25)) +
-                        geom_violin(aes(x=Estimator, y=rho_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
-                        scale_y_continuous(limits = c(-1, 1), name=expression("" *gamma* "=0.25, " *rho* "=.25")) +
-                        scale_x_discrete(name="") +
-                        geom_hline(yintercept=.25) +
-                        theme_minimal()
+## Plot
+for(i in stplots$index){
+  plotsout[[i]] <- ggplot(subset(st, gamma==stplots$gamma[i] & rho==stplots$rho[i] & TT==stplots$TT[i])) +
+    geom_violin(aes(x=Estimator, y=rho_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
+    scale_y_continuous(limits = c(-1, 1), name=expression("Distribution of " *rho* " estimates")) +
+    geom_hline(yintercept=stplots$rho[i]) +
+    ggtitle(bquote(paste("N=64, T=", .(stplots[i,3]), ", ", gamma, "=", .(stplots[i,1]), ", ", rho, "=", .(stplots[i,2])))) +
+    theme_minimal()
+}
 
-## TT=4, gamma=0.25, rho=.5 - rho estimates
-plotsout[[2]] <- ggplot(subset(st, TT==4 & gamma==.25 & rho==.5)) +
-                        geom_violin(aes(x=Estimator, y=rho_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
-                        scale_y_continuous(limits = c(-1, 1), name=expression("" *gamma* "=0.25, " *rho* "=.5")) +
-                        scale_x_discrete(name="") +
-                        geom_hline(yintercept=.5) +
-                        theme_minimal()
-
-## TT=4, gamma=0.5, rho=.25 - rho estimates
-plotsout[[3]] <- ggplot(subset(st, TT==4 & gamma==.5 & rho==.25)) +
-                        geom_violin(aes(x=Estimator, y=rho_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
-                        scale_y_continuous(limits = c(-1, 1), name=expression("" *gamma* "=0.5, " *rho* "=.25")) +
-                        geom_hline(yintercept=.25) +
-                        theme_minimal()
-
-## TT=16, gamma=0.25, rho=.25 - rho estimates
-plotsout[[4]] <- ggplot(subset(st, TT==16 & gamma==.25 & rho==.25)) +
-                        geom_violin(aes(x=Estimator, y=rho_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
-                        scale_y_continuous(limits = c(-1, 1), name="") +
-                        scale_x_discrete(name="") +
-                        geom_hline(yintercept=.25) +
-                        theme_minimal()
-
-## TT=16, gamma=0.25, rho=.5 - rho estimates
-plotsout[[5]] <- ggplot(subset(st, TT==16 & gamma==.25 & rho==.5)) +
-                        geom_violin(aes(x=Estimator, y=rho_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
-                        scale_y_continuous(limits = c(-1, 1), name="") +
-                        scale_x_discrete(name="") +
-                        geom_hline(yintercept=.5) +
-                        theme_minimal()
-
-## TT=16, gamma=0.25, rho=.5 - rho estimates
-plotsout[[6]] <- ggplot(subset(st, TT==16 & gamma==.5 & rho==.25)) +
-                        geom_violin(aes(x=Estimator, y=rho_hat), fill='#A4A4A4', color="#A4A4A4", alpha = 0.5) +
-                        scale_y_continuous(limits = c(-1, 1), name="") +
-                        geom_hline(yintercept=.25) +
-                        theme_minimal()
-
-pdf("plots/MC_st-ViolinPlots-rho-200219.pdf")
-  grid.arrange(arrangeGrob(plotsout[[1]], plotsout[[2]], plotsout[[3]],
-                           top=textGrob("N=64, T=4", gp=gpar(fontface="bold")),
-                           ncol=1),
-               arrangeGrob(plotsout[[4]], plotsout[[5]], plotsout[[6]],
-                           top=textGrob("N=64, T=16", gp=gpar(fontface="bold")),
-                           ncol=1),
-               ncol=2
-  )
+pdf("plots/MC_st-ViolinPlots-rho-200228.pdf")
+  grid.arrange(plotsout[[1]], plotsout[[2]], plotsout[[3]],
+               plotsout[[4]], plotsout[[5]], plotsout[[6]],
+               ncol=2, as.table = FALSE)
 dev.off()
+
+rm(plotsout, stplots)
+
+
+
