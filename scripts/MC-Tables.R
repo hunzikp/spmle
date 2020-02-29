@@ -410,59 +410,62 @@ for(i in 1:length(unique(biastab_st_long$rhoN))){
 xtable(cbind(c("Mean Bias", "RMSE", "Overconfidence", "No convergence"),as.data.frame(tab)), digits = 3)
 
 
-###################################################
-### Compute and export SPATIO-TEMPORAL summary stats for PMLE
-biastab_st <- st %>%
-  filter(method=="spmle" & N==64 & TT==16) %>% # only 64 x 16
-  group_by(gamma, rho, N, TT) %>%
+
+
+#################################################################################
+### Compute and export SPATIAL summary stats for PMLE (all sample sizes)
+biastab_sp <- sp %>%
+  filter(method=="spmle") %>%
+  group_by(rho, N) %>%
   summarise(# beta_0
-            mean_b0=mean(beta0_hat, na.rm=T),
-            meanbias_b0=mean(abs(beta0_hat-beta0), na.rm=T),
-            rmse_b0=sqrt(mean((beta0_hat-beta0)^2, na.rm=T)),
-            sdestim_b0=sd(beta0_hat,na.rm=T),
-            oc_b0 = sd(beta1_hat,na.rm=T)/mean(beta0_se, na.rm=T),  # overconfidence
-            # beta_1
-            mean_b1=mean(beta1_hat, na.rm=T),
-            meanbias_b1=mean(abs(beta0_hat-beta0), na.rm=T),
-            rmse_b1=sqrt(mean((beta1_hat-beta1)^2, na.rm=T)),
-            sdestim_b1=sd(beta1_hat,na.rm=T),
-            oc_b1 = sd(beta1_hat,na.rm=T)/mean(beta1_se, na.rm=T),  # overconfidence
-            # gamma
-            mean_gamma=mean(gamma_hat, na.rm=T),
-            meanbias_gamma=mean(abs(gamma_hat-gamma), na.rm=T),
-            rmse_gamma=sqrt(mean((gamma_hat-gamma)^2, na.rm=T)),
-            sdestim_gamma=sd(gamma_hat,na.rm=T),
-            oc_gamma = sd(gamma_hat,na.rm=T)/mean(gamma_se, na.rm=T),  # overconfidence
-            # rho
-            mean_rho=mean(rho_hat, na.rm=T),
-            meanbias_rho=mean(abs(rho_hat-rho), na.rm=T),
-            rmse_rho=sqrt(mean((rho_hat-rho)^2, na.rm=T)),
-            sdestim_rho=sd(gamma_hat,na.rm=T),
-            oc_rho = sd(rho_hat,na.rm=T)/mean(rho_se, na.rm=T),  # overconfidence
-            nfail = sum(is.na(time))
+    mean_b0=mean(beta0_hat, na.rm=T),
+    meanbias_b0=mean(abs(beta0_hat-beta0), na.rm=T),
+    rmse_b0=sqrt(mean((beta0_hat-beta0)^2, na.rm=T)),
+    sdestim_b0=sd(beta0_hat,na.rm=T),
+    oc_b0 = sd(beta1_hat,na.rm=T)/mean(beta0_se, na.rm=T),  # overconfidence
+    # beta_1
+    mean_b1=mean(beta1_hat, na.rm=T),
+    meanbias_b1=mean(abs(beta0_hat-beta0), na.rm=T),
+    rmse_b1=sqrt(mean((beta1_hat-beta1)^2, na.rm=T)),
+    sdestim_b1=sd(beta1_hat,na.rm=T),
+    oc_b1 = sd(beta1_hat,na.rm=T)/mean(beta1_se, na.rm=T),  # overconfidence
+    # rho
+    mean_rho=mean(rho_hat, na.rm=T),
+    meanbias_rho=mean(abs(rho_hat-rho), na.rm=T),
+    rmse_rho=sqrt(mean((rho_hat-rho)^2, na.rm=T)),
+    sdestim_rho=sd(rho_hat,na.rm=T),
+    oc_rho = sd(rho_hat,na.rm=T)/mean(rho_se, na.rm=T),  # overconfidence
+    nfail = sum(is.na(time))
   )
-print(biastab_st, n=100)
+print(biastab_sp, n=100)
 
 # bias statistics to long format
-biastab_st_long <- gather(biastab_st, statistic, result, mean_b0:nfail, factor_key=FALSE)
-biastab_st_long
+biastab_sp_long <- gather(biastab_sp, statistic, result, mean_b0:nfail, factor_key=FALSE)
+biastab_sp_long
 
 # Index
-biastab_st_long$experiment <- paste(biastab_st_long$gamma, biastab_st_long$rho, biastab_st_long$N, biastab_st_long$TT, sep="-")
+biastab_sp_long <- biastab_sp_long[order(biastab_sp_long$N, biastab_sp_long$rho),]
+biastab_sp_long$experiment <- as.factor(biastab_sp_long$rho)
+biastab_sp_long$samplesize <- as.factor(biastab_sp_long$N)
+unique(biastab_sp_long$experiment)
+unique(biastab_sp_long$samplesize)
 
 # input matrix
-tab <- matrix(NA_real_, nrow=15, 4)
+tab <- matrix(NA_real_, nrow=15, 9)
 
 # fill matrix
-for(i in 1:length(unique(biastab_st_long$experiment))){
-  temp <- biastab_st_long[biastab_st_long$experiment==unique(biastab_st_long$experiment)[i],
-                          c("statistic", "result")]
-  tab[1:5+(5*(i-1)),1] <- as.matrix(temp$result[grepl("b0", temp$statistic)])
-  tab[1:5+5*(i-1),2] <- as.matrix(temp$result[grepl("b1", temp$statistic)])
-  tab[1:5+5*(i-1),3] <- as.matrix(temp$result[grepl("gamma", temp$statistic)])
-  tab[1:5+5*(i-1),4] <- as.matrix(temp$result[grepl("rho", temp$statistic)])
-  rm(temp)
-  print(i)
+for(i in 1:length(unique(biastab_sp_long$samplesize))){
+  print(paste("i", i, sep="="))
+  for(j in 1:length(unique(biastab_sp_long$experiment))){
+    print(paste("j", j, sep="="))
+    temp <- biastab_sp_long[biastab_sp_long$samplesize==unique(biastab_sp_long$samplesize)[i] &
+                              biastab_sp_long$experiment==unique(biastab_sp_long$experiment)[j],
+                            c("statistic", "result")]
+    tab[1:5+(5*(j-1)), 1+3*(i-1)] <- as.matrix(temp$result[grepl("b0", temp$statistic)])
+    tab[1:5+(5*(j-1)), 2+3*(i-1)] <- as.matrix(temp$result[grepl("b1", temp$statistic)])
+    tab[1:5+(5*(j-1)), 3+3*(i-1)] <- as.matrix(temp$result[grepl("rho", temp$statistic)])
+    rm(temp)
+  }
 }
 
 # print for export
@@ -472,6 +475,70 @@ print(
          , digits = 3),
   include.rownames = F
 )
+
+#################################################################################
+### Compute and export TEMPORAL summary stats for PMLE (all sample sizes)
+
+biastab_te <- te %>%
+  filter(method=="spmle") %>%
+  group_by(gamma, N, TT) %>%
+  summarise(# beta_0
+    mean_b0=mean(beta0_hat, na.rm=T),
+    meanbias_b0=mean(abs(beta0_hat-beta0), na.rm=T),
+    rmse_b0=sqrt(mean((beta0_hat-beta0)^2, na.rm=T)),
+    sdestim_b0=sd(beta0_hat,na.rm=T),
+    oc_b0 = sd(beta1_hat,na.rm=T)/mean(beta0_se, na.rm=T),  # overconfidence
+    # beta_1
+    mean_b1=mean(beta1_hat, na.rm=T),
+    meanbias_b1=mean(abs(beta0_hat-beta0), na.rm=T),
+    rmse_b1=sqrt(mean((beta1_hat-beta1)^2, na.rm=T)),
+    sdestim_b1=sd(beta1_hat,na.rm=T),
+    oc_b1 = sd(beta1_hat,na.rm=T)/mean(beta1_se, na.rm=T),  # overconfidence
+    # gamma
+    mean_gamma=mean(gamma_hat, na.rm=T),
+    meanbias_gamma=mean(abs(gamma_hat-gamma), na.rm=T),
+    rmse_gamma=sqrt(mean((gamma_hat-gamma)^2, na.rm=T)),
+    sdestim_gamma=sd(gamma_hat,na.rm=T),
+    oc_gamma = sd(gamma_hat,na.rm=T)/mean(gamma_se, na.rm=T),  # overconfidence
+    nfail = sum(is.na(time))
+  )
+print(biastab_te, n=100)
+
+# bias statistics to long format
+biastab_te_long <- gather(biastab_te, statistic, result, mean_b0:nfail, factor_key=FALSE)
+biastab_te_long
+
+# Index
+biastab_te_long <- biastab_te_long[order(biastab_te_long$N,biastab_te_long$TT, biastab_te_long$gamma),]
+biastab_te_long$experiment <- as.factor(biastab_te_long$gamma)
+biastab_te_long$samplesize <- paste(biastab_te_long$N, biastab_te_long$TT, sep="-")
+unique(biastab_te_long$experiment)
+unique(biastab_te_long$samplesize)
+
+# input matrix
+tab <- matrix(NA_real_, nrow=15, 9)
+
+# fill matrix
+for(i in 1:length(unique(biastab_te_long$samplesize))){
+#  for(j in 1:length(unique(biastab_te_long$experiment))){
+    temp <- biastab_te_long[biastab_te_long$samplesize==unique(biastab_te_long$samplesize)[i] ,#&
+#                              biastab_te_long$experiment==unique(biastab_te_long$experiment)[j],
+                            c("statistic", "result")]
+    tab[, 1+3*(i-1)] <- as.matrix(temp$result[grepl("b0", temp$statistic)])
+    tab[, 2+3*(i-1)] <- as.matrix(temp$result[grepl("b1", temp$statistic)])
+    tab[, 3+3*(i-1)] <- as.matrix(temp$result[grepl("gamma", temp$statistic)])
+    rm(temp)
+#  }
+}
+
+# print for export
+print(
+  xtable(cbind(c("Mean Coefficient Estimate", "Mean Bias", "RMSE", "Actual SD of estimates", "Overconfidence"),
+               as.data.frame(tab))
+         , digits = 3),
+  include.rownames = F
+)
+
 
 #################################################################################
 ### Compute and export SPATIO-TEMPORAL summary stats for PMLE (all sample sizes)
@@ -500,7 +567,7 @@ biastab_st <- st %>%
     mean_rho=mean(rho_hat, na.rm=T),
     meanbias_rho=mean(abs(rho_hat-rho), na.rm=T),
     rmse_rho=sqrt(mean((rho_hat-rho)^2, na.rm=T)),
-    sdestim_rho=sd(gamma_hat,na.rm=T),
+    sdestim_rho=sd(rho_hat,na.rm=T),
     oc_rho = sd(rho_hat,na.rm=T)/mean(rho_se, na.rm=T),  # overconfidence
     nfail = sum(is.na(time))
   )
@@ -524,14 +591,14 @@ tab <- matrix(NA_real_, nrow=15, 12)
 for(i in 1:length(unique(biastab_st_long$samplesize))){
   for(j in 1:length(unique(biastab_st_long$experiment))){
     temp <- biastab_st_long[biastab_st_long$samplesize==unique(biastab_st_long$samplesize)[i] &
-                            biastab_st_long$experiment==unique(biastab_st_long$experiment)[j],
+                              biastab_st_long$experiment==unique(biastab_st_long$experiment)[j],
                             c("statistic", "result")]
     tab[1:5+(5*(j-1)), 1+4*(i-1)] <- as.matrix(temp$result[grepl("b0", temp$statistic)])
     tab[1:5+(5*(j-1)), 2+4*(i-1)] <- as.matrix(temp$result[grepl("b1", temp$statistic)])
     tab[1:5+(5*(j-1)), 3+4*(i-1)] <- as.matrix(temp$result[grepl("gamma", temp$statistic)])
     tab[1:5+(5*(j-1)), 4+4*(i-1)] <- as.matrix(temp$result[grepl("rho", temp$statistic)])
     rm(temp)
-    }
+  }
 }
 
 # print for export
@@ -541,3 +608,104 @@ print(
          , digits = 3),
   include.rownames = F
 )
+
+
+  # ###################################################
+  # ### Compute and export SPATIO-TEMPORAL summary stats for PMLE
+  # biastab_st <- st %>%
+  #   filter(method=="spmle" & N==64 & TT==16) %>% # only 64 x 16
+  #   group_by(gamma, rho, N, TT) %>%
+  #   summarise(# beta_0
+  #     mean_b0=mean(beta0_hat, na.rm=T),
+  #     meanbias_b0=mean(abs(beta0_hat-beta0), na.rm=T),
+  #     rmse_b0=sqrt(mean((beta0_hat-beta0)^2, na.rm=T)),
+  #     sdestim_b0=sd(beta0_hat,na.rm=T),
+  #     oc_b0 = sd(beta1_hat,na.rm=T)/mean(beta0_se, na.rm=T),  # overconfidence
+  #     # beta_1
+  #     mean_b1=mean(beta1_hat, na.rm=T),
+  #     meanbias_b1=mean(abs(beta0_hat-beta0), na.rm=T),
+  #     rmse_b1=sqrt(mean((beta1_hat-beta1)^2, na.rm=T)),
+  #     sdestim_b1=sd(beta1_hat,na.rm=T),
+  #     oc_b1 = sd(beta1_hat,na.rm=T)/mean(beta1_se, na.rm=T),  # overconfidence
+  #     # gamma
+  #     mean_gamma=mean(gamma_hat, na.rm=T),
+  #     meanbias_gamma=mean(abs(gamma_hat-gamma), na.rm=T),
+  #     rmse_gamma=sqrt(mean((gamma_hat-gamma)^2, na.rm=T)),
+  #     sdestim_gamma=sd(gamma_hat,na.rm=T),
+  #     oc_gamma = sd(gamma_hat,na.rm=T)/mean(gamma_se, na.rm=T),  # overconfidence
+  #     # rho
+  #     mean_rho=mean(rho_hat, na.rm=T),
+  #     meanbias_rho=mean(abs(rho_hat-rho), na.rm=T),
+  #     rmse_rho=sqrt(mean((rho_hat-rho)^2, na.rm=T)),
+  #     sdestim_rho=sd(rho_hat,na.rm=T),
+  #     oc_rho = sd(rho_hat,na.rm=T)/mean(rho_se, na.rm=T),  # overconfidence
+  #     nfail = sum(is.na(time))
+  #   )
+  # print(biastab_st, n=100)
+  #
+  # # bias statistics to long format
+  # biastab_st_long <- gather(biastab_st, statistic, result, mean_b0:nfail, factor_key=FALSE)
+  # biastab_st_long
+  #
+  # # Index
+  # biastab_st_long$experiment <- paste(biastab_st_long$gamma, biastab_st_long$rho, biastab_st_long$N, biastab_st_long$TT, sep="-")
+  #
+  # # input matrix
+  # tab <- matrix(NA_real_, nrow=15, 4)
+  #
+  # # fill matrix
+  # for(i in 1:length(unique(biastab_st_long$experiment))){
+  #   temp <- biastab_st_long[biastab_st_long$experiment==unique(biastab_st_long$experiment)[i],
+  #                           c("statistic", "result")]
+  #   tab[1:5+(5*(i-1)),1] <- as.matrix(temp$result[grepl("b0", temp$statistic)])
+  #   tab[1:5+5*(i-1),2] <- as.matrix(temp$result[grepl("b1", temp$statistic)])
+  #   tab[1:5+5*(i-1),3] <- as.matrix(temp$result[grepl("gamma", temp$statistic)])
+  #   tab[1:5+5*(i-1),4] <- as.matrix(temp$result[grepl("rho", temp$statistic)])
+  #   rm(temp)
+  #   print(i)
+  # }
+  #
+  # # print for export
+  # print(
+  #   xtable(cbind(c("Mean Coefficient Estimate", "Mean Bias", "RMSE", "Actual SD of estimates", "Overconfidence"),
+  #                as.data.frame(tab))
+  #          , digits = 3),
+  #   include.rownames = F
+  # )
+
+###################################################
+### Compute and export SPATIO-TEMPORAL summary stats for RIS
+load("output/mcresults-ST-1050n-100r-FHC-200229.Rdata")
+rismc <- results_tb
+rm(results_tb)
+
+
+biastab_ris <- rismc %>%
+  group_by(gamma, rho, N, TT) %>%
+  summarise(# beta_0
+    mean_b0=mean(beta0_hat, na.rm=T),
+    meanbias_b0=mean(abs(beta0_hat-beta0), na.rm=T),
+    rmse_b0=sqrt(mean((beta0_hat-beta0)^2, na.rm=T)),
+    sdestim_b0=sd(beta0_hat,na.rm=T),
+    oc_b0 = sd(beta1_hat,na.rm=T)/mean(beta0_se, na.rm=T),  # overconfidence
+    # beta_1
+    mean_b1=mean(beta1_hat, na.rm=T),
+    meanbias_b1=mean(abs(beta0_hat-beta0), na.rm=T),
+    rmse_b1=sqrt(mean((beta1_hat-beta1)^2, na.rm=T)),
+    sdestim_b1=sd(beta1_hat,na.rm=T),
+    oc_b1 = sd(beta1_hat,na.rm=T)/mean(beta1_se, na.rm=T),  # overconfidence
+    # gamma
+    mean_gamma=mean(gamma_hat, na.rm=T),
+    meanbias_gamma=mean(abs(gamma_hat-gamma), na.rm=T),
+    rmse_gamma=sqrt(mean((gamma_hat-gamma)^2, na.rm=T)),
+    sdestim_gamma=sd(gamma_hat,na.rm=T),
+    oc_gamma = sd(gamma_hat,na.rm=T)/mean(gamma_se, na.rm=T),  # overconfidence
+    # rho
+    mean_rho=mean(rho_hat, na.rm=T),
+    meanbias_rho=mean(abs(rho_hat-rho), na.rm=T),
+    rmse_rho=sqrt(mean((rho_hat-rho)^2, na.rm=T)),
+    sdestim_rho=sd(rho_hat,na.rm=T),
+    oc_rho = sd(rho_hat,na.rm=T)/mean(rho_se, na.rm=T),  # overconfidence
+    nfail = sum(is.na(time))
+  )
+print(biastab_ris[, c("rho", "gamma",  "N", "TT", "mean_rho", "mean_gamma")], n=100)
