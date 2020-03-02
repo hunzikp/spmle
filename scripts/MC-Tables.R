@@ -422,10 +422,10 @@ biastab_sp <- sp %>%
     meanbias_b0=mean(abs(beta0_hat-beta0), na.rm=T),
     rmse_b0=sqrt(mean((beta0_hat-beta0)^2, na.rm=T)),
     sdestim_b0=sd(beta0_hat,na.rm=T),
-    oc_b0 = sd(beta1_hat,na.rm=T)/mean(beta0_se, na.rm=T),  # overconfidence
+    oc_b0 = sd(beta0_hat,na.rm=T)/mean(beta0_se, na.rm=T),  # overconfidence
     # beta_1
     mean_b1=mean(beta1_hat, na.rm=T),
-    meanbias_b1=mean(abs(beta0_hat-beta0), na.rm=T),
+    meanbias_b1=mean(abs(beta1_hat-beta1), na.rm=T),
     rmse_b1=sqrt(mean((beta1_hat-beta1)^2, na.rm=T)),
     sdestim_b1=sd(beta1_hat,na.rm=T),
     oc_b1 = sd(beta1_hat,na.rm=T)/mean(beta1_se, na.rm=T),  # overconfidence
@@ -487,10 +487,10 @@ biastab_te <- te %>%
     meanbias_b0=mean(abs(beta0_hat-beta0), na.rm=T),
     rmse_b0=sqrt(mean((beta0_hat-beta0)^2, na.rm=T)),
     sdestim_b0=sd(beta0_hat,na.rm=T),
-    oc_b0 = sd(beta1_hat,na.rm=T)/mean(beta0_se, na.rm=T),  # overconfidence
+    oc_b0 = sd(beta0_hat,na.rm=T)/mean(beta0_se, na.rm=T),  # overconfidence
     # beta_1
     mean_b1=mean(beta1_hat, na.rm=T),
-    meanbias_b1=mean(abs(beta0_hat-beta0), na.rm=T),
+    meanbias_b1=mean(abs(beta1_hat-beta1), na.rm=T),
     rmse_b1=sqrt(mean((beta1_hat-beta1)^2, na.rm=T)),
     sdestim_b1=sd(beta1_hat,na.rm=T),
     oc_b1 = sd(beta1_hat,na.rm=T)/mean(beta1_se, na.rm=T),  # overconfidence
@@ -550,10 +550,10 @@ biastab_st <- st %>%
     meanbias_b0=mean(abs(beta0_hat-beta0), na.rm=T),
     rmse_b0=sqrt(mean((beta0_hat-beta0)^2, na.rm=T)),
     sdestim_b0=sd(beta0_hat,na.rm=T),
-    oc_b0 = sd(beta1_hat,na.rm=T)/mean(beta0_se, na.rm=T),  # overconfidence
+    oc_b0 = sd(beta0_hat,na.rm=T)/mean(beta0_se, na.rm=T),  # overconfidence
     # beta_1
     mean_b1=mean(beta1_hat, na.rm=T),
-    meanbias_b1=mean(abs(beta0_hat-beta0), na.rm=T),
+    meanbias_b1=mean(abs(beta1_hat-beta1), na.rm=T),
     rmse_b1=sqrt(mean((beta1_hat-beta1)^2, na.rm=T)),
     sdestim_b1=sd(beta1_hat,na.rm=T),
     oc_b1 = sd(beta1_hat,na.rm=T)/mean(beta1_se, na.rm=T),  # overconfidence
@@ -677,20 +677,23 @@ print(
 ### Compute and export SPATIO-TEMPORAL summary stats for RIS
 load("output/mcresults-ST-1050n-100r-FHC-200229.Rdata")
 rismc <- results_tb
+load("output/mcresults-ST-1050n-100r-FHC-200301.Rdata")
+rismc <- rbind(rismc, results_tb)
 rm(results_tb)
 
+rismc <- rismc[order(rismc$rho, rismc$gamma),]
 
 biastab_ris <- rismc %>%
-  group_by(gamma, rho, N, TT) %>%
+  group_by(rho, gamma, N, TT) %>%
   summarise(# beta_0
     mean_b0=mean(beta0_hat, na.rm=T),
     meanbias_b0=mean(abs(beta0_hat-beta0), na.rm=T),
     rmse_b0=sqrt(mean((beta0_hat-beta0)^2, na.rm=T)),
     sdestim_b0=sd(beta0_hat,na.rm=T),
-    oc_b0 = sd(beta1_hat,na.rm=T)/mean(beta0_se, na.rm=T),  # overconfidence
+    oc_b0 = sd(beta0_hat,na.rm=T)/mean(beta0_se, na.rm=T),  # overconfidence
     # beta_1
     mean_b1=mean(beta1_hat, na.rm=T),
-    meanbias_b1=mean(abs(beta0_hat-beta0), na.rm=T),
+    meanbias_b1=mean(abs(beta1_hat-beta1), na.rm=T),
     rmse_b1=sqrt(mean((beta1_hat-beta1)^2, na.rm=T)),
     sdestim_b1=sd(beta1_hat,na.rm=T),
     oc_b1 = sd(beta1_hat,na.rm=T)/mean(beta1_se, na.rm=T),  # overconfidence
@@ -699,13 +702,49 @@ biastab_ris <- rismc %>%
     meanbias_gamma=mean(abs(gamma_hat-gamma), na.rm=T),
     rmse_gamma=sqrt(mean((gamma_hat-gamma)^2, na.rm=T)),
     sdestim_gamma=sd(gamma_hat,na.rm=T),
+#    mean_gamma_se = mean(gamma_se, na.rm=T),
     oc_gamma = sd(gamma_hat,na.rm=T)/mean(gamma_se, na.rm=T),  # overconfidence
     # rho
     mean_rho=mean(rho_hat, na.rm=T),
     meanbias_rho=mean(abs(rho_hat-rho), na.rm=T),
     rmse_rho=sqrt(mean((rho_hat-rho)^2, na.rm=T)),
     sdestim_rho=sd(rho_hat,na.rm=T),
+#    mean_rho_se = mean(rho_se, na.rm=T),
     oc_rho = sd(rho_hat,na.rm=T)/mean(rho_se, na.rm=T),  # overconfidence
     nfail = sum(is.na(time))
   )
-print(biastab_ris[, c("rho", "gamma",  "N", "TT", "mean_rho", "mean_gamma")], n=100)
+#print(biastab_ris[, c("rho", "gamma",  "N", "TT", "mean_rho", "mean_gamma")], n=100)
+# print(biastab_ris[, c("rho", "gamma",  "sdestim_rho", "mean_rho_se", "sdestim_gamma", "mean_gamma_se", "oc_rho", "oc_gamma")],
+#       n=100)
+
+
+# bias statistics to long format
+biastab_ris_long <- gather(biastab_ris, statistic, result, mean_b0:nfail, factor_key=FALSE)
+biastab_ris_long
+
+# Index
+biastab_ris_long$experiment <- paste(biastab_ris_long$rho, biastab_ris_long$gamma, sep="-")
+
+# input matrix
+tab <- matrix(NA_real_, nrow=20, 4)
+
+# fill matrix
+for(i in 1:length(unique(biastab_ris_long$experiment))){
+  temp <- biastab_ris_long[biastab_ris_long$experiment==unique(biastab_ris_long$experiment)[i],
+                          c("statistic", "result")]
+  tab[1:5+(5*(i-1)),1] <- as.matrix(temp$result[grepl("b0", temp$statistic)])
+  tab[1:5+5*(i-1),2] <- as.matrix(temp$result[grepl("b1", temp$statistic)])
+  tab[1:5+5*(i-1),3] <- as.matrix(temp$result[grepl("rho", temp$statistic)])
+  tab[1:5+5*(i-1),4] <- as.matrix(temp$result[grepl("gamma", temp$statistic)])
+  rm(temp)
+  print(i)
+}
+
+# print for export
+print(
+  xtable(cbind(c("Mean Coefficient Estimate", "Mean Bias", "RMSE", "Actual SD of estimates", "Overconfidence"),
+               as.data.frame(tab))
+         , digits = 3),
+  include.rownames = F
+)
+
