@@ -5,27 +5,15 @@ June 5, 3030
 
 Say we have some process
 
-  
-![
-y\_t = X\_t \\beta + \\lambda y\_{t-1} + \\rho W y\_t + u\_t
-](https://latex.codecogs.com/png.latex?%0Ay_t%20%3D%20X_t%20%5Cbeta%20%2B%20%5Clambda%20y_%7Bt-1%7D%20%2B%20%5Crho%20W%20y_t%20%2B%20u_t%0A
-"
-y_t = X_t \\beta + \\lambda y_{t-1} + \\rho W y_t + u_t
-")  
-with ![E(u\_t)
-= 0](https://latex.codecogs.com/png.latex?E%28u_t%29%20%3D%200
-"E(u_t) = 0") and ![E(X\_t) =
-E(X)](https://latex.codecogs.com/png.latex?E%28X_t%29%20%3D%20E%28X%29
-"E(X_t) = E(X)") (X is stationary).
+y\_t = X\_t beta + lambda y\_{t-1} + rho W y\_t + u\_t
+
+with E(u\_t) = 0 and E(X\_t) = E(X) (X is stationary).
 
 Julian has helpfully proposed that the unconditional mean of the outcome
-is   
-![
-E(y\_t) = E(y) = (I - \\lambda I - \\rho W)^{-1} E(X) \\beta.
-](https://latex.codecogs.com/png.latex?%0AE%28y_t%29%20%3D%20E%28y%29%20%3D%20%28I%20-%20%5Clambda%20I%20-%20%5Crho%20W%29%5E%7B-1%7D%20E%28X%29%20%5Cbeta.%0A
-"
-E(y_t) = E(y) = (I - \\lambda I - \\rho W)^{-1} E(X) \\beta.
-")  
+is
+
+E(y\_t) = E(y) = (I - lambda I - rho W)^{-1} E(X) beta.
+
 Let’s check whether that pans out in
     simulations.
 

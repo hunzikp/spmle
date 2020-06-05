@@ -13,15 +13,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Say we have some process
 
-$$
-y_t = X_t \beta + \lambda y_{t-1} + \rho W y_t + u_t
-$$
-with $E(u_t) = 0$ and $E(X_t) = E(X)$ (X is stationary).
+
+y_t = X_t beta + lambda y_{t-1} + rho W y_t + u_t
+
+with E(u_t) = 0 and E(X_t) = E(X) (X is stationary).
 
 Julian has helpfully proposed that the unconditional mean of the outcome is
-$$
-E(y_t) = E(y) = (I - \lambda I - \rho W)^{-1} E(X) \beta.
-$$
+
+E(y_t) = E(y) = (I - lambda I - rho W)^{-1} E(X) beta.
+
 Let's check whether that pans out in simulations.
 
 ```{r simulate}
