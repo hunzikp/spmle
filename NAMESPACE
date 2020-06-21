@@ -1,7 +1,6 @@
 exportPattern("^[[:alpha:]]+")
 import(reticulate)
 import(rgeos)
-import(raster)
 import(R6)
 import(sp)
 import(maxLik)

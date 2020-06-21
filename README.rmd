@@ -1,7 +1,7 @@
 ---
 title: "spmle"
 author: "Philipp Hunziker"
-date: "November 25, 2018"
+date: "June 21, 2020"
 output: github_document
 ---
 
@@ -11,7 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # System Requirements
 
-Python 2.7 (tested) or Python 3.6 (not tested). Also, [conda](https://conda.io/docs/user-guide/install/windows.html) if on Windows.
+To use the (optional but recommended) Python speed-up, you need Python 3.6+ (and [conda](https://conda.io/docs/user-guide/install/windows.html) if on Windows).
+
 
 # Installation
 
@@ -21,7 +22,7 @@ Install `spmle` directly from this repository:
 devtools::install_github("hunzikp/spmle")
 ```
 
-In case you don't have scipy and numpy installed (or don't know what these are), run the following in an R console:
+In case you don't have scipy and numpy installed (or don't know what these are) and you want to use the Python speed-up, run the following in an R console:
 ```{r dependencies, eval=FALSE}
 spmle::install_pydep()
 ```
@@ -29,7 +30,7 @@ This command installs the Python dependencies in the `r-reticulate` virtual envi
 
 # Usage
 
-To use the package you need to specify a python binary or virtual environment where scipy and numpy are installed. If you ran the `install_pydep()` command above, then you can use the following:  
+To use the Python speed-up you need to specify a python binary or virtual environment where scipy and numpy are installed. If you ran the `install_pydep()` command above, then you can use the following:  
 
 ```{r usage, eval=FALSE}
 library(reticulate)
@@ -40,4 +41,4 @@ reticulate::use_condaenv("r-reticulate")  # In Windows
 
 # Examples
 
-See [here](scripts/mbdm_testing.md).
+See [here](scripts/stmodel_testing.md).
